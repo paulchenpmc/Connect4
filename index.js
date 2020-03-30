@@ -25,11 +25,17 @@ function remove_username(usrname) {
 
 io.on('connection', function(socket) {
     let username = uniqueNamesGenerator({ dictionaries: [adjectives, adjectives, animals] });
-    let randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
     console.log(username + ' connected...');
-    current_users[username] = randomColor;
+    current_users[username] = 1;
     socket.emit('your_username', username);
     io.emit('current_users', current_users);
+
+    socket.on('prior_username', function(usrname){
+        console.log('  Prior user detected, changing to: ' + usrname);
+        username = usrname;
+        remove_username(username);
+        current_users[usrname] = 1;
+    });
 
     socket.on('disconnect', function(){
         console.log(username + ' disconnected...');
