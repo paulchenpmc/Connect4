@@ -10,7 +10,11 @@ let current_users = {};
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', function(req, res) {
-    res.sendFile(__dirname + 'index.html');
+    res.sendFile(__dirname + '/index.html');
+});
+
+app.get('/game', function(req, res) {
+    res.sendFile(__dirname + '/public/game.html');
 });
 
 function remove_username(usrname) {
