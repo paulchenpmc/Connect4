@@ -26,4 +26,20 @@ $(function () {
       }
       $('#username').text(username);
     });
+
+    $('#newgame_button').click(function() {
+      socket.emit('new_game');
+    });
+
+    $('#joinrandomgame_button').click(function() {
+      socket.emit('join_random_game');
+    });
+
+    $('#joingame_form').submit(function(e){
+      e.preventDefault(); // prevents page reloading
+      let game_code = $('#m').val();
+      if (game_code === '') return false;
+      socket.emit('join_game', game_code);
+      return false;
+    });
 });

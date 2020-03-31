@@ -6,6 +6,7 @@ const path = require('path');
 const { uniqueNamesGenerator, adjectives, colors, animals } = require('unique-names-generator');
 
 let current_users = {};
+let rooms = 0;
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -34,7 +35,22 @@ io.on('connection', function(socket) {
         console.log('  Prior user detected, changing to: ' + usrname);
         username = usrname;
         remove_username(username);
-        current_users[usrname] = 1;
+        current_users[usrname] = -1;
+    });
+
+    socket.on('new_game', function(){
+        console.log('Creating new game...');
+        socket.join(rooms)
+        current_users[username] = rooms;
+        rooms++;
+    });
+
+    socket.on('join_game', function(game_code){
+        console.log('Connecting user from game code...');
+    });
+
+    socket.on('join_random_game', function(){
+        console.log('Attempting to join random game...');
     });
 
     socket.on('disconnect', function(){
