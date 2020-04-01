@@ -8,6 +8,7 @@ const { uniqueNamesGenerator, adjectives, colors, animals } = require('unique-na
 let current_users = {};
 let game_state = {};
 let num_rooms = 0;
+let random_games = [];
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -39,7 +40,7 @@ io.on('connection', function(socket) {
     });
 
     socket.on('new_game', function(){
-        console.log('Creating new game...');
+        console.log('Creating new game and waiting for friend...');
         console.log('  ' + username + ' joining room ' + num_rooms);
         socket.join(num_rooms)
         // Save what room the user is assigned to
@@ -74,19 +75,33 @@ io.on('connection', function(socket) {
     socket.on('join_random_game', function(){
         console.log('Attempting to join random game...');
         // Iterate through current_users to see if any single players waiting
-        for (const room of Object.keys(io.sockets.adapter.rooms)) {
-            // Check if room is a number (aka a game room, and not a socket.io default room) and is waiting
-            if (!isNaN(room) && io.sockets.adapter.rooms[room].length === 1) {
+        for (let i = 0; i < random_games.length; i++) {
+            let room = random_games[i];
+            // Check if room is valid and is waiting for another player
+            if (io.sockets.adapter.rooms[room] && io.sockets.adapter.rooms[room].length === 1) {
                 console.log('  ' + username + ' joining room ' + room);
                 socket.join(room);
                 current_users[username] = room;
+                // Remove room from array of single players waiting to play
+                random_games.splice(i, 1);
                 // Announce game start
                 io.sockets.in(room).emit('game_start', '');
                 return;
             }
         }
         // If for loop completes, no available games found
-        socket.emit('alert_mesg', 'No available games found.');
+        // Start new game and wait for another random join request
+        console.log('Creating new game...');
+        console.log('  ' + username + ' joining room ' + num_rooms);
+        socket.join(num_rooms)
+        // Save what room the user is assigned to
+        current_users[username] = num_rooms;
+        // Add room to list of waiting random players
+        random_games.push(num_rooms);
+        // Initialize empty game board at same key as room id
+        let matrix = new Array(7).fill(0).map(() => new Array(7).fill(0));
+        game_state[num_rooms] = matrix;
+        num_rooms++;
     });
 
     socket.on('disconnect', function(){
