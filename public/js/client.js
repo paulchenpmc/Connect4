@@ -17,11 +17,20 @@ $(function () {
       for (let x = 0; x < cols.length; x++) {
         for (let y = 0; y < 7; y++) {
           let square = document.createElement('div');
-          // square.id = 'block';
+          let circle = document.createElement('div');
+          circle.id = '' + x + '-' + y;
+          circle.className = 'circle';
+          square.id = 'square' + x + '-' + y;
           square.className = 'square';
+          square.appendChild(circle);
           cols[x].appendChild(square) ;
         }
       }
+      // Register click handler for squares after creation
+      $('.square').click(function() {
+        console.log('square clicked');
+        // socket.emit('player_move', moveObject);
+      });
     }
 
     socket.on('your_username', function(usrname){
@@ -49,7 +58,7 @@ $(function () {
 
     socket.on('game_start', function(gameData) {
       $('.matchmaking').remove();
-      $('#banner_message').text('');
+      $('#banner_message').remove();
       let opponent = gameData['player1'];
       if (opponent === username) opponent = gameData['player2'];
       $('#players').text(username + ', you are playing ' + opponent);
@@ -60,13 +69,11 @@ $(function () {
     $('#newgame_button').click(function() {
       socket.emit('new_game');
       $('.matchmaking').remove();
-      // Send message to player to let them know how to let another player join
     });
 
     $('#joinrandomgame_button').click(function() {
       socket.emit('join_random_game');
       $('.matchmaking').remove();
-      // Send message to player to let them know to wait
     });
 
     $('#joingame_form').submit(function(e){
