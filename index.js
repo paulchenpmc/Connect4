@@ -16,10 +16,6 @@ app.get('/', function(req, res) {
     res.sendFile(__dirname + '/index.html');
 });
 
-app.get('/game', function(req, res) {
-    res.sendFile(__dirname + '/public/game.html');
-});
-
 function remove_username(usrname) {
     let clr = current_users[usrname];
     delete current_users[usrname];
@@ -42,12 +38,13 @@ io.on('connection', function(socket) {
     socket.on('new_game', function(){
         console.log('Creating new game and waiting for friend...');
         console.log('  ' + username + ' joining room ' + num_rooms);
-        socket.join(num_rooms)
+        socket.join(num_rooms);
+        socket.emit('connectToRoom', 'Send your username to a friend and tell them to enter it in the text box. The game will start after they enter your username. Please wait...');
         // Save what room the user is assigned to
         current_users[username] = num_rooms;
         // Initialize empty game board at same key as room id
         let matrix = new Array(7).fill(0).map(() => new Array(7).fill(0));
-        game_state[num_rooms] = matrix;
+        game_state[num_rooms] = {'board': matrix, 'player1': username};
         num_rooms++;
     });
 
@@ -63,8 +60,11 @@ io.on('connection', function(socket) {
                 console.log('  ' + username + ' joining room ' + room);
                 socket.join(room);
                 current_users[username] = room;
+                game_state[room]['player2'] = username;
                 // Announce game start
-                io.sockets.in(room).emit('game_start', '');
+                let firstTurn = [target_username, username][Math.floor(Math.random()*2)];
+                game_state[room]['turn'] = firstTurn;
+                io.sockets.in(room).emit('game_start', game_state[room]);
             }
         } else {
             // Tell user no such user exists
@@ -82,25 +82,29 @@ io.on('connection', function(socket) {
                 console.log('  ' + username + ' joining room ' + room);
                 socket.join(room);
                 current_users[username] = room;
+                game_state[room]['player2'] = username;
                 // Remove room from array of single players waiting to play
                 random_games.splice(i, 1);
                 // Announce game start
-                io.sockets.in(room).emit('game_start', '');
+                let firstTurn = [game_state[room]['player1'], game_state[room]['player2']][Math.floor(Math.random()*2)];
+                game_state[room]['turn'] = firstTurn;
+                io.sockets.in(room).emit('game_start', game_state[room]);
                 return;
             }
         }
         // If for loop completes, no available games found
         // Start new game and wait for another random join request
-        console.log('Creating new game...');
+        console.log('  No game available, creating new game...');
         console.log('  ' + username + ' joining room ' + num_rooms);
-        socket.join(num_rooms)
+        socket.join(num_rooms);
+        socket.emit('connectToRoom', 'Game will start when another player joins a random game. Please wait for another player...');
         // Save what room the user is assigned to
         current_users[username] = num_rooms;
         // Add room to list of waiting random players
         random_games.push(num_rooms);
         // Initialize empty game board at same key as room id
         let matrix = new Array(7).fill(0).map(() => new Array(7).fill(0));
-        game_state[num_rooms] = matrix;
+        game_state[num_rooms] = {'board': matrix, 'player1': username};
         num_rooms++;
     });
 
