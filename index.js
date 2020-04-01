@@ -108,6 +108,17 @@ io.on('connection', function(socket) {
         num_rooms++;
     });
 
+    socket.on('player_move', function(moveObject){
+        let room_id = current_users[moveObject['player']];
+        // Check for valid move
+
+        // Change turn and send update
+        let new_turn = game_state[room_id]['player1'];
+        if (new_turn === game_state[room_id]['turn']) new_turn = game_state[room_id]['player2'];
+        game_state[room_id]['turn'] = new_turn;
+        io.in(room_id).emit('game_update', game_state[room_id]);
+    });
+
     socket.on('disconnect', function(){
         console.log(username + ' disconnected...');
         remove_username(username);

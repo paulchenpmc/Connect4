@@ -26,10 +26,17 @@ $(function () {
           cols[x].appendChild(square) ;
         }
       }
+
       // Register click handler for squares after creation
       $('.square').click(function() {
-        console.log('square clicked');
-        // socket.emit('player_move', moveObject);
+        let user_turn = $('#turn').text().replace('Turn: ', '');
+        if (user_turn !== username) return; // Do not send moves when it is not your turn
+        let grid_position = $(this).attr('id').replace('square', '').split('-');
+        let x = grid_position[0];
+        let y = grid_position[1];
+        let moveObject = {'player': username, 'move': [x,y]};
+        console.log(moveObject);
+        socket.emit('player_move', moveObject);
       });
     }
 
@@ -64,6 +71,12 @@ $(function () {
       $('#players').text(username + ', you are playing ' + opponent);
       $('#turn').text('Turn: ' + gameData['turn']);
       initializeGameBoardHTML();
+    });
+
+    socket.on('game_update', function(gameData) {
+      $('#turn').text('Turn: ' + gameData['turn']);
+      // Redraw the game board
+      // initializeGameBoardHTML();
     });
 
     $('#newgame_button').click(function() {
