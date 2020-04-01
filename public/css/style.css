@@ -12,6 +12,15 @@
 .game_options {
   display: flex;
   flex-direction: column;
+  align-items: center;
+}
+
+.game_options > button {
+  width: 300px;
+}
+
+#m {
+  width: 30vw;
 }
 
 #game_board {

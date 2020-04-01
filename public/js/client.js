@@ -27,6 +27,14 @@ $(function () {
       $('#username').text(username);
     });
 
+    socket.on('alert_mesg', function(mesg) {
+      alert(mesg);
+    });
+
+    socket.on('connectToRoom', function(data) {
+
+    });
+
     $('#newgame_button').click(function() {
       socket.emit('new_game');
     });
