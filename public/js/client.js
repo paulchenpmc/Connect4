@@ -145,6 +145,14 @@ $(function () {
       applyCosmeticUsername();
     });
 
+    socket.on('game_over', function(mesg) {
+      $('.square').unbind(); // Disable broadcasting of further moves
+      $('#turn').remove();
+      let game_over_message = '<h1 class="contains_username">' + mesg + '</h1>';
+      $('.centered').append(game_over_message);
+      applyCosmeticUsername();
+    });
+
     $('#change_username_button').click(function() {
       let new_username = prompt('Enter new username:');
       if (!new_username.match(/^[0-9a-zA-Z]+$/)) {

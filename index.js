@@ -16,10 +16,59 @@ app.get('/', function(req, res) {
     res.sendFile(__dirname + '/index.html');
 });
 
-function remove_username(usrname) {
+ let remove_username = function(usrname) {
     let clr = current_users[usrname];
     delete current_users[usrname];
     return clr;
+}
+
+let checkWinCondition = function(board, player) {
+    let width = board.length;
+    let height = board[0].length;
+
+    // horizontal check
+    for (let j = 0; j < height - 3; j++) {
+        for (let i = 0; i < width; i++) {
+            if (board[i][j] === player && board[i][j+1] === player && board[i][j+2] === player && board[i][j+3] === player) {
+                return true;
+            }
+        }
+    }
+    // vertical check
+    for (let i = 0; i < width - 3; i++) {
+        for (let j = 0; j < height; j++) {
+            if (board[i][j] === player && board[i+1][j] === player && board[i+2][j] === player && board[i+3][j] === player) {
+                return true;
+            }
+        }
+    }
+    // ascending diagonal check
+    for (let i = 3; i < width; i++) {
+        for (let j = 0; j < height - 3; j++) {
+            if (board[i][j] === player && board[i-1][j+1] === player && board[i-2][j+2] === player && board[i-3][j+3] === player)
+                return true;
+        }
+    }
+    // descending diagonal check
+    for (let i = 3; i < width; i++) {
+        for (let j = 3; j < height; j++) {
+            if (board[i][j] === player && board[i-1][j-1] === player && board[i-2][j-2] === player && board[i-3][j-3] === player)
+                return true;
+        }
+    }
+    // Draw check
+    let empty_space_detected = false;
+    for (let j = 0; j < width; j++) {
+        for (let i = 0; i < height; i++) {
+            if (board[j][i] === 0) {
+                empty_space_detected = true;
+                break;
+            }
+        }
+        if (empty_space_detected) break;
+    }
+    if (empty_space_detected === false) return 'Draw';
+    return false;
 }
 
 io.on('connection', function(socket) {
@@ -28,14 +77,14 @@ io.on('connection', function(socket) {
     current_users[username] = 1;
     socket.emit('your_username', username);
 
-    socket.on('prior_username', function(usrname){
+    socket.on('prior_username', function(usrname) {
         console.log('  Prior user detected, changing to: ' + usrname);
         username = usrname;
         remove_username(username);
         current_users[usrname] = -1;
     });
 
-    socket.on('new_game', function(){
+    socket.on('new_game', function() {
         console.log('Creating new game and waiting for friend...');
         console.log('  ' + username + ' joining room ' + num_rooms);
         socket.join(num_rooms);
@@ -48,7 +97,7 @@ io.on('connection', function(socket) {
         num_rooms++;
     });
 
-    socket.on('join_game', function(target_username){
+    socket.on('join_game', function(target_username) {
         if (current_users.hasOwnProperty(target_username)) {
             // If room has 2 users, reject connection
             let room = current_users[target_username];
@@ -72,7 +121,7 @@ io.on('connection', function(socket) {
         }
     });
 
-    socket.on('join_random_game', function(){
+    socket.on('join_random_game', function() {
         console.log('Attempting to join random game...');
         // Iterate through current_users to see if any single players waiting
         for (let i = 0; i < random_games.length; i++) {
@@ -108,7 +157,7 @@ io.on('connection', function(socket) {
         num_rooms++;
     });
 
-    socket.on('player_move', function(moveObject){
+    socket.on('player_move', function(moveObject) {
         // Check for valid move
         let room_id = current_users[moveObject['player']];
         if (moveObject['player'] !== game_state[room_id]['turn']) return; // Do not accept moves from players when it is not their turn
@@ -118,6 +167,13 @@ io.on('connection', function(socket) {
         if (lowest_empty_y === -1 || row !== lowest_empty_y) return; // Invalid move - column is full or not the lowest free square
         // Update game board
         game_state[room_id]['board'][col][lowest_empty_y] = moveObject['player'];
+        // Check for win, end game if true
+        let win = checkWinCondition(game_state[room_id]['board'], game_state[room_id]['turn']);
+        if (win === 'Draw') {
+            io.in(room_id).emit('game_over', 'Draw');
+        } else if (win === true) {
+            io.in(room_id).emit('game_over', 'WINNER: ' + game_state[room_id]['turn']); // Emit player who won
+        }
         // Change turn and send update
         let new_turn = game_state[room_id]['player1'];
         if (new_turn === game_state[room_id]['turn']) new_turn = game_state[room_id]['player2'];
@@ -125,7 +181,7 @@ io.on('connection', function(socket) {
         io.in(room_id).emit('game_update', game_state[room_id]);
     });
 
-    socket.on('disconnect', function(){
+    socket.on('disconnect', function() {
         console.log(username + ' disconnected...');
         remove_username(username);
     });
