@@ -1,13 +1,14 @@
 $(function () {
     let socket = io();
     let username = '';
+    let cosmetic_username = null;
     let opponent = '';
     let cookie_username = 'game-username';
     let cookie_theme = 'game-theme';
     let last_game_state = {'board': new Array(7).fill(0).map(() => new Array(7).fill(0))};
     let selected_theme = 0;
     let color_themes = [
-      // board color, empty, your piece, opponent piece
+      // board, empty space, your piece, opponent piece
       ['#D4B483', '#E4DFDA', '#C1666B', '#4281A4'], // Classic
       ['#A37B73', '#DBBEA1', '#DB7F67', '#3F292B'], // Autumn
       ['#545E75', '#82A0BC', '#63ADF2', '#304D6D'], // Ocean
@@ -46,7 +47,7 @@ $(function () {
       // Register click handlers after creation
       $('.square').click(function() {
         let user_turn = $('#turn').text().replace('Turn: ', '');
-        if (user_turn !== username) return; // Do not send moves when it is not your turn
+        if (user_turn !== username && user_turn !== cosmetic_username) return; // Do not send moves when it is not your turn
         let grid_position = $(this).attr('id').replace('square', '').split('-');
         let x = grid_position[0];
         let y = grid_position[1];
@@ -73,6 +74,16 @@ $(function () {
         }
       }
       last_game_state = gameData;
+    }
+
+    let applyCosmeticUsername = function() {
+      if (cosmetic_username === null) return;
+
+      $(".contains_username").each(function() {
+        let text = $(this).text();
+        text = text.replace(username, cosmetic_username);
+        $(this).text(text);
+      });
     }
 
     socket.on('your_username', function(usrname){
@@ -109,12 +120,26 @@ $(function () {
       $('#players').text(username + ', you are playing ' + opponent);
       $('#turn').text('Turn: ' + gameData['turn']);
       initializeGameHTML();
+      applyCosmeticUsername();
     });
 
     socket.on('game_update', function(gameData) {
       $('#turn').text('Turn: ' + gameData['turn']);
       // Redraw the game board
       updateGameBoard(gameData);
+      applyCosmeticUsername();
+    });
+
+    $('#change_username_button').click(function() {
+      let new_username = prompt('Enter new username:');
+      if (!new_username.match(/^[0-9a-zA-Z]+$/)) {
+        alert('Invalid username, please use alphanumeric characters.');
+        return;
+      }
+      cosmetic_username = new_username;
+      applyCosmeticUsername();
+      socket.emit('username_change', cosmetic_username);
+      document.cookie = cookie_username + '=' + cosmetic_username;
     });
 
     $('#newgame_button').click(function() {
@@ -135,7 +160,6 @@ $(function () {
       return false;
     });
 
-    // let radio_buttons = $('input[type=radio]')
     $('input[type=radio]').on('change', function(){
       selected_theme = $(this).attr('value');
       document.cookie = cookie_theme + '=' + selected_theme;

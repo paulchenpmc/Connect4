@@ -39,7 +39,7 @@ io.on('connection', function(socket) {
         console.log('Creating new game and waiting for friend...');
         console.log('  ' + username + ' joining room ' + num_rooms);
         socket.join(num_rooms);
-        socket.emit('connectToRoom', 'Send your username to a friend and tell them to enter it in the text box. The game will start after they enter your username. Please wait...');
+        socket.emit('connectToRoom', 'Send the following code to a friend and tell them to enter it in the text box. The game will start after they enter your username. || CODE: ' + username + ' ||');
         // Save what room the user is assigned to
         current_users[username] = num_rooms;
         // Initialize empty game board at same key as room id
