@@ -9,6 +9,10 @@
   justify-content: space-between;
 }
 
+.navbar > * {
+  margin-top: 7px;
+}
+
 .matchmaking {
   display: flex;
   flex-direction: column;
@@ -37,6 +41,15 @@
 
 #m {
   width: 30vw;
+}
+
+#theme_form {
+  display: none;
+  flex-direction: row;
+}
+
+#theme_form > p {
+  margin: 0px;
 }
 
 #game_board {

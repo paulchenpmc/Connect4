@@ -2,15 +2,16 @@ $(function () {
     let socket = io();
     let username = '';
     let opponent = '';
-    let cookie_username = 'game-username'
-    let last_game_state = new Array(7).fill(0).map(() => new Array(7).fill(0));
+    let cookie_username = 'game-username';
+    let cookie_theme = 'game-theme';
+    let last_game_state = {'board': new Array(7).fill(0).map(() => new Array(7).fill(0))};
     let selected_theme = 0;
     let color_themes = [
       // board color, empty, your piece, opponent piece
       ['#D4B483', '#E4DFDA', '#C1666B', '#4281A4'], // Classic
       ['#A37B73', '#DBBEA1', '#DB7F67', '#3F292B'], // Autumn
       ['#545E75', '#82A0BC', '#63ADF2', '#304D6D'], // Ocean
-    ]
+    ];
 
     socket.on('connect', function () {
 
@@ -21,7 +22,8 @@ $(function () {
       return v ? v[2] : null;
     }
 
-    let initializeGameBoardHTML = function(){
+    let initializeGameHTML = function(){
+      // Create game board html
       let cols = $(".col");
       for (let x = 0; x < cols.length; x++) {
         for (let y = 0; y < 7; y++) {
@@ -39,8 +41,9 @@ $(function () {
           cols[x].appendChild(square) ;
         }
       }
-
-      // Register click handler for squares after creation
+      // Show theme switching html
+      $('#theme_form').css('display', 'flex')
+      // Register click handlers after creation
       $('.square').click(function() {
         let user_turn = $('#turn').text().replace('Turn: ', '');
         if (user_turn !== username) return; // Do not send moves when it is not your turn
@@ -69,20 +72,23 @@ $(function () {
           $('#' + square_id).css('background', color_themes[selected_theme][0]);
         }
       }
-      last_game_state = gameData['board'];
+      last_game_state = gameData;
     }
 
     socket.on('your_username', function(usrname){
       // Check if username cookie exists on connect
-      let cookie = getCookie(cookie_username);
-      if (cookie !== null) {
+      let cookie1 = getCookie(cookie_username);
+      let cookie2 = getCookie(cookie_theme);
+      if (cookie1 !== null && cookie2 !== null) {
         // If username exists, use that username
-        let usrname = cookie;
+        let usrname = cookie1;
+        selected_theme = cookie2;
         socket.emit('prior_username', usrname);
         username = usrname;
       } else {
         username = usrname;
         document.cookie = cookie_username + '=' + usrname;
+        document.cookie = cookie_theme + '=' + selected_theme;
       }
       $('#username').text('Username: ' + username);
     });
@@ -102,7 +108,7 @@ $(function () {
       if (opponent === username) opponent = gameData['player2'];
       $('#players').text(username + ', you are playing ' + opponent);
       $('#turn').text('Turn: ' + gameData['turn']);
-      initializeGameBoardHTML();
+      initializeGameHTML();
     });
 
     socket.on('game_update', function(gameData) {
@@ -127,5 +133,12 @@ $(function () {
       if (game_code === '') return false;
       socket.emit('join_game', game_code);
       return false;
+    });
+
+    // let radio_buttons = $('input[type=radio]')
+    $('input[type=radio]').on('change', function(){
+      selected_theme = $(this).attr('value');
+      document.cookie = cookie_theme + '=' + selected_theme;
+      updateGameBoard(last_game_state);
     });
 });
