@@ -52,8 +52,23 @@ $(function () {
         let x = grid_position[0];
         let y = grid_position[1];
         let moveObject = {'player': username, 'move': [x,y]};
-        console.log(moveObject);
         socket.emit('player_move', moveObject);
+      });
+
+      $('.square').mouseleave(function () {
+        $(this).css('background', color_themes[selected_theme][0]);
+      });
+
+      $('.square').mouseenter(function() {
+        let user_turn = $('#turn').text().replace('Turn: ', '');
+        if (user_turn !== username && user_turn !== cosmetic_username) return; // Do not send moves when it is not your turn
+        let grid_position = $(this).attr('id').replace('square', '').split('-');
+        let x = parseInt(grid_position[0]);
+        let y = parseInt(grid_position[1]);
+        let y_lowest_empty_space = last_game_state['board'][x].lastIndexOf(0);
+        let highlight_color = 'red';
+        if (last_game_state['board'][x][y] === 0 && y === y_lowest_empty_space) highlight_color = 'green';
+        $(this).css('background', highlight_color);
       });
     }
 
