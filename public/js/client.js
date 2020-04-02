@@ -1,7 +1,16 @@
 $(function () {
     let socket = io();
     let username = '';
+    let opponent = '';
     let cookie_username = 'game-username'
+    let last_game_state = new Array(7).fill(0).map(() => new Array(7).fill(0));
+    let selected_theme = 0;
+    let color_themes = [
+      // board color, empty, your piece, opponent piece
+      ['#D4B483', '#E4DFDA', '#C1666B', '#4281A4'], // Classic
+      ['#A37B73', '#DBBEA1', '#DB7F67', '#3F292B'], // Autumn
+      ['#545E75', '#82A0BC', '#63ADF2', '#304D6D'], // Ocean
+    ]
 
     socket.on('connect', function () {
 
@@ -22,6 +31,10 @@ $(function () {
           circle.className = 'circle';
           square.id = 'square' + x + '-' + y;
           square.className = 'square';
+          // Set css
+          circle.setAttribute('style', 'background:' + color_themes[selected_theme][1]);
+          square.setAttribute('style', 'background:' + color_themes[selected_theme][0]);
+          // Append to DOM
           square.appendChild(circle);
           cols[x].appendChild(square) ;
         }
@@ -38,6 +51,25 @@ $(function () {
         console.log(moveObject);
         socket.emit('player_move', moveObject);
       });
+    }
+
+    let updateGameBoard = function(gameData) {
+      let col_divs = $(".col");
+      for (let x = 0; x < gameData['board'].length; x++) {
+        let col = gameData['board'][x];
+        for (let y = 0; y < col.length; y++) {
+          let grid_val = 1; // Default empty color
+          if (col[y] === username) grid_val = 2; // Your color
+          else if (col[y] === opponent) grid_val = 3; // Opponent color
+          let circle_color = color_themes[selected_theme][grid_val]; // Get color from theme palette
+          // Update css
+          let circle_id = '' + x + '-' + y;
+          let square_id = 'square' + x + '-' + y;
+          $('#' + circle_id).css('background', circle_color);
+          $('#' + square_id).css('background', color_themes[selected_theme][0]);
+        }
+      }
+      last_game_state = gameData['board'];
     }
 
     socket.on('your_username', function(usrname){
@@ -66,7 +98,7 @@ $(function () {
     socket.on('game_start', function(gameData) {
       $('.matchmaking').remove();
       $('#banner_message').remove();
-      let opponent = gameData['player1'];
+      opponent = gameData['player1'];
       if (opponent === username) opponent = gameData['player2'];
       $('#players').text(username + ', you are playing ' + opponent);
       $('#turn').text('Turn: ' + gameData['turn']);
@@ -76,7 +108,7 @@ $(function () {
     socket.on('game_update', function(gameData) {
       $('#turn').text('Turn: ' + gameData['turn']);
       // Redraw the game board
-      // initializeGameBoardHTML();
+      updateGameBoard(gameData);
     });
 
     $('#newgame_button').click(function() {

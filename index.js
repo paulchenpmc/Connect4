@@ -109,9 +109,19 @@ io.on('connection', function(socket) {
     });
 
     socket.on('player_move', function(moveObject){
-        let room_id = current_users[moveObject['player']];
         // Check for valid move
-
+        let room_id = current_users[moveObject['player']];
+        if (moveObject['player'] !== game_state[room_id]['turn']) return; // Do not accept moves from players when it is not their turn
+        let col = moveObject['move'][0];
+        let valid_move = game_state[room_id]['board'][col].indexOf(0);
+        if (valid_move === -1) return; // Invalid move - column is full
+        // Update game board
+        for (let i = game_state[room_id]['board'][col].length - 1; i >= 0; i--) {
+            if (game_state[room_id]['board'][col][i] === 0) {
+                game_state[room_id]['board'][col][i] = moveObject['player'];
+                break;
+            }
+        }
         // Change turn and send update
         let new_turn = game_state[room_id]['player1'];
         if (new_turn === game_state[room_id]['turn']) new_turn = game_state[room_id]['player2'];
